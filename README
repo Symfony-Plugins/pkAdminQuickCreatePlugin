@@ -1,43 +1,43 @@
-= pkAdminQuickCreatePlugin =
+# pkAdminQuickCreatePlugin #
 
 Many admin generator forms involve making associations between the object being edited and related objects. For instance, when adding an event to a calendar, you may need to associate that event with a DJ or a band.
 
 Symfony's admin generator can provide pulldowns to select these, but what if they don't already exist? pkAdminQuickCreatePlugin makes it easy to implement "quick create" buttons, like this:
 
-    Select Band: [Band Menu] OR... [Add a New Band]
+    Select Band: Band Menu OR... Add a New Band
 
-    When the user clicks "Add a New Band," the state of the form is saved and the user is diverted to the edit action of the band admin module. When the user saves a new band, they are automatically redirected back to the edit action of the event admin module, with all of their form fields restored and the newly created band preselected from the band menu. The cancel ("list") button also redirects appropriately. (We recommend relabeling them "save" and "cancel" via custom templates.)
+  When the user clicks "Add a New Band," the state of the form is saved and the user is diverted to the edit action of the band admin module. When the user saves a new band, they are automatically redirected back to the edit action of the event admin module, with all of their form fields restored and the newly created band preselected from the band menu. The cancel ("list") button also redirects appropriately. (We recommend relabeling them "save" and "cancel" via custom templates.)
 
-    Solutions to keep the user from becoming confused about the process and avoid certain implementation pitfalls are discussed below.
+Solutions to keep the user from becoming confused about the process and avoid certain implementation pitfalls are discussed below.
 
-    Diversions can be nested, so it's possible to add a guitarist while adding a band while adding an event, although it is certainly true that the potential for user confusion increases as one goes along.
+Diversions can be nested, so it's possible to add a guitarist while adding a band while adding an event, although it is certainly true that the potential for user confusion increases as one goes along.
 
-    This greatly increases the user-friendliness of the admin generator with a minimum of new effort on your part.
+This greatly increases the user-friendliness of the admin generator with a minimum of new effort on your part.
 
-== Requirements ==
+## Requirements ##
 
 pkAdminQuickCreatePlugin requires Propel. It has only been tested with
 Symfony 1.0 although it is expected to work without modification in
 Symfony 1.1 and possibly 1.2, which are not greatly different in the
 admin generator arena.
 
-== Usage ==
+## Usage ##
 
 To take advantage of pkAdminQuickCreatePlugin you will need to make
 changes to your code in four places:
 
-1. The action class of the admin generator module you are
-coming from (events, in my example). I'll call this the "source" module.
+* The action class of the admin generator module you are
+  coming from (events, in my example). I'll call this the "source" module.
 
-2. The templates of that module.
+* The templates of that module.
 
-3. The action class of the admin generator module you are
-going to (bands, in my example). I'll call this the "destination" module.
+* The action class of the admin generator module you are
+  going to (bands, in my example). I'll call this the "destination" module.
 
-4. Technically optional, but essential for your users to understand what 
-is going on: change the templates of your destination module.
+* Technically optional, but essential for your users to understand what 
+  is going on: change the templates of your destination module.
 
-=== Step One: The Source Module's Action Class ===
+### Step One: The Source Module's Action Class ###
 
 Add the following code to your source module's action class, replacing
 'Event' and 'Band' appropriately:
@@ -51,7 +51,7 @@ Add the following code to your source module's action class, replacing
           array(
             'type' => 'Band',
             'field' => 'band_id',
-'           'module' => 'band'
+            'module' => 'band'
           )
         )
       );
@@ -71,7 +71,7 @@ sure to call `pkAdminQuickCreateTools::validateEdit` first, and return
 false from your validator if it returns false. It's fine to make other
 validation checks as well after that call.
 
-=== Step Two: The Source Module's Templates ===
+### Step Two: The Source Module's Templates ###
 
 The source module will need a custom partial for the field containing
 the ID of the item you will be adding a quick-create button for. 
@@ -81,6 +81,8 @@ In `event/config/generator.yml`, make sure the `display` list for
     edit:
       display:
         # Leading underscore means "use the partial"
+        # Please use a dash, not an asterisk, I have no idea
+        # why markdown is rendering an asterisk
         - _band_id
         # More fields etc
 
@@ -156,13 +158,13 @@ to be used at all.
 If you just want the quick create button, use the `quick_create_tag` helper:
 
     quick_create_tag('Band', 'band_id', 
-      array('label' => 'Add a New Band'))
+      array('label' => 'Add a New Band'));
 
 As before, the last two parameters are optional, as long as you are
 following the naming convention and you like the label that the code
 generates for you.
 
-=== Step Three: The Destination Module's Actions ==
+### Step Three: The Destination Module's Actions ###
 
 The destination admin generator module (the `band` module, in our
 case) requires several new methods, but these are short and 
@@ -211,7 +213,7 @@ any quick create operations on the stack. And `pkAdminQuickCreateTools::list`
 recognizes when the user has cancelled a quick create operation by
 clicking "List" rather than "Save" or "Save and List."
 
-=== Step Four: Destination Module Templates ===
+### Step Four: Destination Module Templates ###
 
 Technically, we're done at this point. We can start the creation of
 an event, decide we need to include a new band in that event, click
@@ -248,14 +250,14 @@ All the same, we can do more for the user by reminding them that they
 are in the middle of a quick create operation by creating an
 `_edit_header.php` template like this:
 
-<?php if (pkAdminQuickCreateTools::active()): ?>
-<p><b>You are adding a band as part of a new event.</b> When you click
-Save you will be returned to the event form. If you decide not to add a new
-band, click Cancel.
-</p>
-<?php endif ?>
+    <?php if (pkAdminQuickCreateTools::active()): ?>
+    <p><b>You are adding a band as part of a new event.</b> When you click
+    Save you will be returned to the event form. If you decide not to add a new
+    band, click Cancel.
+    </p>
+    <?php endif ?>
 
-== Pitfalls: Ensuring Consistent Results ==
+## Pitfalls: Ensuring Consistent Results ##
 
 By its very nature, the web is a stateless system in which users can
 navigate to any page at any time. "Quick create" flies against the
@@ -272,7 +274,21 @@ the fact that the user has "wandered off the reservation" and probably
 doesn't want to complete any quick create operation that may have
 previously been in progress.
 
-== Credits ==
+## Changelog ##
+
+### 0.5.2 ###
+
+Markdown fixes in documentation. No code changes.
+
+### 0.5.1 ###
+
+Markdown fixes in documentation. No code changes.
+
+### 0.5.0 ###
+
+First release.
+
+## Credits ##
 
 Tom Boutell
 [mailto:tom@punkave.com tom@punkave.com]
