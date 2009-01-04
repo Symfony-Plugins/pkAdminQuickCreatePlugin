@@ -1,0 +1,280 @@
+= pkAdminQuickCreatePlugin =
+
+Many admin generator forms involve making associations between the object being edited and related objects. For instance, when adding an event to a calendar, you may need to associate that event with a DJ or a band.
+
+Symfony's admin generator can provide pulldowns to select these, but what if they don't already exist? pkAdminQuickCreatePlugin makes it easy to implement "quick create" buttons, like this:
+
+    Select Band: [Band Menu] OR... [Add a New Band]
+
+    When the user clicks "Add a New Band," the state of the form is saved and the user is diverted to the edit action of the band admin module. When the user saves a new band, they are automatically redirected back to the edit action of the event admin module, with all of their form fields restored and the newly created band preselected from the band menu. The cancel ("list") button also redirects appropriately. (We recommend relabeling them "save" and "cancel" via custom templates.)
+
+    Solutions to keep the user from becoming confused about the process and avoid certain implementation pitfalls are discussed below.
+
+    Diversions can be nested, so it's possible to add a guitarist while adding a band while adding an event, although it is certainly true that the potential for user confusion increases as one goes along.
+
+    This greatly increases the user-friendliness of the admin generator with a minimum of new effort on your part.
+
+== Requirements ==
+
+pkAdminQuickCreatePlugin requires Propel. It has only been tested with
+Symfony 1.0 although it is expected to work without modification in
+Symfony 1.1 and possibly 1.2, which are not greatly different in the
+admin generator arena.
+
+== Usage ==
+
+To take advantage of pkAdminQuickCreatePlugin you will need to make
+changes to your code in four places:
+
+1. The action class of the admin generator module you are
+coming from (events, in my example). I'll call this the "source" module.
+
+2. The templates of that module.
+
+3. The action class of the admin generator module you are
+going to (bands, in my example). I'll call this the "destination" module.
+
+4. Technically optional, but essential for your users to understand what 
+is going on: change the templates of your destination module.
+
+=== Step One: The Source Module's Action Class ===
+
+Add the following code to your source module's action class, replacing
+'Event' and 'Band' appropriately:
+
+    // validateEdit method of event/actions/actions.class.php
+    public function validateEdit()
+    {
+      return pkAdminQuickCreateTools::validateEdit(
+        'Event',
+        array(
+          array(
+            'type' => 'Band',
+            'field' => 'band_id',
+'           'module' => 'band'
+          )
+        )
+      );
+    }
+
+Here I have made the model class to be quickly added (`Band`),
+the field of the event class where its ID is to be saved
+(`band_id`) and the admin generated module that edits bands
+(`band`) explicit. However, if you follow this naming convention,
+the `field` and `module` keys are optional. That is, if you specify
+only `type` and set it to `Band`, the plugin will figure out that the field
+is called `band_id` and the module is called `band`. This is
+handy if you happen to follow this common naming convention.
+
+"What if I already have a `validateEdit` method?" That's OK. Just be
+sure to call `pkAdminQuickCreateTools::validateEdit` first, and return
+false from your validator if it returns false. It's fine to make other
+validation checks as well after that call.
+
+=== Step Two: The Source Module's Templates ===
+
+The source module will need a custom partial for the field containing
+the ID of the item you will be adding a quick-create button for. 
+In `event/config/generator.yml`, make sure the `display` list for
+`edit` specifies the use of a partial:
+
+    edit:
+      display:
+        # Leading underscore means "use the partial"
+        - _band_id
+        # More fields etc
+
+In `event/templates/_band_id.php`, code the partial like so:
+
+    // Bring in the QuickCreate helper 
+
+    use_helper('QuickCreate');
+
+    // Generate a select menu of existing bands, plus an
+    // 'Add a New Band' button
+    echo select_or_quick_create_tag(
+      $event,
+      'Band',
+      'band_id',
+      ' Or ',
+      // Options for select menu
+      array("peer_method" => "getAll",
+        "include_blank" => false),
+      // Options for quick create button
+      array("label" => "Add a New Band"));
+
+In this example I am passing the following parameters:
+
+`$event` is the event we're administering (and to which we'd like to
+quickly add a band). This is required.
+
+`Band` is the model class we want to quickly add. This is also required.
+
+`band_id` is the database field name within the event table in which we'll 
+be saving the ID of the band. This is optional. If the model class
+we're adding is `Band` and this field is `false`, `band_id` will 
+be assumed.
+
+` Or ` is the HTML displayed as a separator between the select menu
+and the quick create button.
+
+The fifth parameter is an array of options for the select menu.
+In addition to the regular options accepted by `select_tag`, you
+can specify `peer_method`, which is the static method of the
+`BandPeer` class that will be used to fetch the list of
+possible bands. You can also specify `include_blank` and set it to
+`false` if you want to make sure the user doesn't have the option of
+selecting no band at all. These options, and the entire fifth parameter,
+are optional. If `peer_method` is not specified, `doSelect` is called,
+which is reasonable for simple applications that don't care about
+things like alphabetical ordering. If `include_blank` is 
+not specified, the "no band option" will be available when the field
+is not classified as `required` in `schema.yml`.
+
+The sixth and final parameter is an array of options for the quick create 
+button. In addition to the usual options for `submit_tag`, you can
+also specify `label`, the text to be displayed on the button. This
+parameter is also optional. If a label is not specified, or the entire
+parameter is not specified, the plugin will generate a label like this:
+
+    Add a New Band
+
+This label is passed to the `__` function so it can be internationalized
+in the usual way.
+
+If the name of your model class is not easily converted to reasonable
+English, specify an explicit label.
+
+Note that you can specify `false` to skip over optional parameters while
+still specifying later parameters explicitly.
+
+"But I don't want a select menu!" I hear you. This helper is a convenience
+but you might have a different interface in mind for selecting existing
+bands. For one thing, there might be too many for this type of interface
+to be used at all.
+
+If you just want the quick create button, use the `quick_create_tag` helper:
+
+    quick_create_tag('Band', 'band_id', 
+      array('label' => 'Add a New Band'))
+
+As before, the last two parameters are optional, as long as you are
+following the naming convention and you like the label that the code
+generates for you.
+
+=== Step Three: The Destination Module's Actions ==
+
+The destination admin generator module (the `band` module, in our
+case) requires several new methods, but these are short and 
+straightforward:
+
+    public function saveBand($band)
+    {
+      parent::saveBand($band);
+      pkAdminQuickCreateTools::save($band);
+    }
+
+    public function executeIndex()
+    {
+      pkAdminQuickCreateTools::executeIndex("Band");
+      return parent::executeIndex();
+    }
+
+    public function executeList()
+    {
+      pkAdminQuickCreateTools::executeList("Band");
+      return parent::executeList();
+    }
+
+All of these methods can contain additional code if you wish.
+For the `saveBand` method, put your additional code
+in between the `parent::saveBand` call and the 
+`pkAdminQuickCreateTools::save` call, to make sure any custom
+data you are saving is stored before a possible redirect to the
+source admin module.
+
+For the other two methods, make sure to put your additional code 
+after the call to `pkAdminQuickCreateTools::executeIndex` or
+`pkAdminQuickCreateTools::executeList`. Whether to call the parent
+versions of these two methods afterwards depends on whether you are completely
+overriding them or just extending them; that's up to you.
+
+"What are these calls for?" `pkAdminQuickCreateTools::save` checks whether
+a quick create is in progress and, if appropriate, redirects to the
+source admin generator module, restoring the original form submission
+that started the process with the ID of the newly created object as
+the appropriate parameter so that it is automatically understood by
+the original module. `pkAdminQuickCreateTools::index` takes note that
+the user has explicitly navigated to another admin generator module,
+which means they have abandoned the quick create process, and cancels
+any quick create operations on the stack. And `pkAdminQuickCreateTools::list`
+recognizes when the user has cancelled a quick create operation by
+clicking "List" rather than "Save" or "Save and List."
+
+=== Step Four: Destination Module Templates ===
+
+Technically, we're done at this point. We can start the creation of
+an event, decide we need to include a new band in that event, click
+"Add a New Band" and run off to do that, click "Save" and come back.
+
+But right now, the user interface of the edit action for the band
+module is confusing to an unacceptable degree. That's because the
+user will see options like "Save and List" and "List," which don't
+make much sense in the context of quick create.
+
+What should we do? My strong recommendation: get rid of 
+"Save and List" and "List" entirely. They are awful names that
+don't follow standard user interface conventions anyway.
+"Save" and "Cancel" make sense to users in every context; why
+invent new labels just for Symfony?
+
+You can do this by copying `_edit_actions.php` from the cache
+to `band/templates/_edit_actions.php` and editing it as follows:
+
+    <ul class="sf_admin_actions">
+        <li><?php echo submit_tag(__('Save'), array (
+      'name' => 'save_and_list',
+      'class' => 'sf_admin_action_save_and_list',
+    )) ?></li>
+        <li><?php echo button_to(__('Cancel'), 'band/list?id='.$band->getId(), array (
+      'class' => 'sf_admin_action_list',
+    )) ?></li>
+    </ul>
+
+This prevents user confusion without the need for special code
+that is explicitly aware of the quick create operation.
+
+All the same, we can do more for the user by reminding them that they
+are in the middle of a quick create operation by creating an
+`_edit_header.php` template like this:
+
+<?php if (pkAdminQuickCreateTools::active()): ?>
+<p><b>You are adding a band as part of a new event.</b> When you click
+Save you will be returned to the event form. If you decide not to add a new
+band, click Cancel.
+</p>
+<?php endif ?>
+
+== Pitfalls: Ensuring Consistent Results ==
+
+By its very nature, the web is a stateless system in which users can
+navigate to any page at any time. "Quick create" flies against the
+wind in this respect. But there are steps we can take to make it 
+work smoothly, as I've described in step four above.
+
+One more important step: when you do provide the user
+with a link to click on in order to reach the list view of a class
+that might potentially be "quick created" in some other context, 
+always link to the `index` action rather than linking directly to the
+`list` action. Since the `index` action simply redirects to the
+`list` action, it is an ideal place for the plugin to take note of
+the fact that the user has "wandered off the reservation" and probably
+doesn't want to complete any quick create operation that may have
+previously been in progress.
+
+== Credits ==
+
+Tom Boutell
+[mailto:tom@punkave.com tom@punkave.com]
+[http://www.punkave.com/ P'unk Avenue]
+

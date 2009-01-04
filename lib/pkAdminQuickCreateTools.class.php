@@ -155,7 +155,7 @@ class pkAdminQuickCreateTools
     $user = sfContext::getInstance()->getUser();
     $user->setAttribute("quick-create-stack", null);
   }
-  static public function active($type)
+  static public function active()
   {
     $user = sfContext::getInstance()->getUser();
     $stack = $user->getAttribute("quick-create-stack", array());

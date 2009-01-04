@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package packagerversion="1.7.1" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0 http://pear.php.net/dtd/tasks-1.0.xsd  http://pear.php.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
+ <name>pkAdminQuickCreatePlugin</name>
+ <channel>pear.symfony-project.com</channel>
+ <summary>Allows "quick create" buttons which step aside to other admin generator classes, add a new object, and return with that field automatically filled in</summary>
+ <description>
+ Many admin generator forms involve making associations between the object being edited and related objects. For instance, when adding an event to a calendar, you may need to associate that event with a DJ or a band. Symfony's admin generator can provide pulldowns to select these, but what if the
+ y don't already exist? pkAdminQuickCreatePlugin makes it easy to implement "quick create" buttons that step aside to another admin generator module, create an object, and then bring the user back to complete the rest of the original form with all of their work intact.
+ </description>
+ <lead>
+  <name>Tom Boutell</name>
+  <user>boutell</user>
+  <email>tom@punkave.com</email>
+  <active>yes</active>
+ </lead>
+ <date>2009-01-04</date>
+ <time>12:43:00</time>
+ <version>
+  <release>0.5.0</release>
+  <api>0.5.0</api>
+ </version>
+ <stability>
+  <release>beta</release>
+  <api>beta</api>
+ </stability>
+ <license uri="http://www.symfony-project.com/license">MIT license</license>
+ <notes>-</notes>
+ <contents>
+ <dir name="/">
+   <dir name="lib">
+    <dir name="helper">
+     <file role="data" name="QuickCreateHelper.php" />
+    </dir>
+    <file role="data" name="pkAdminQuickCreateTools.class.php" />
+   </dir>
+   <file role="data" name="LICENSE" />
+   <file role="data" name="package.xml" />
+   <file role="data" name="README" />
+  </dir>
+ </contents>
+ <dependencies>
+  <required>
+   <php>
+    <min>5.0.0</min>
+   </php>
+   <pearinstaller>
+    <min>1.4.1</min>
+   </pearinstaller>
+   <package>
+    <name>symfony</name>
+    <channel>pear.symfony-project.com</channel>
+    <min>1.0.0</min>
+    <max>2.0.0</max>
+    <exclude>2.0.0</exclude>
+   </package>
+  </required>
+ </dependencies>
+ <phprelease />
+ <changelog />
+</package>
